@@ -2,7 +2,9 @@
 import json
 import logging
 import os
+import shutil
 import sys
+import tempfile
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
@@ -18,51 +20,69 @@ class MidnightSunsMM:
 
         self.setup_logging()
 
+        # Create a toolbar frame
+        self.toolbar_frame = tk.Frame(master)
+        self.toolbar_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky=tk.W + tk.E)
+
+        # Create a variable to store the Advanced flag state
+        self.advanced_flag = tk.BooleanVar()
+
+        # Create and position the Advanced flag checkbutton
+        self.advanced_flag_checkbutton = tk.Checkbutton(self.toolbar_frame, text="Advanced",
+                                                        variable=self.advanced_flag, command=self.toggle_advanced)
+        self.advanced_flag_checkbutton.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+
         # Create and position the setup folders button
         self.setup_folders_button = tk.Button(master, text="Setup Folders", command=self.setup_folders)
-        self.setup_folders_button.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.setup_folders_button.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the source folder selection button
         self.source_folder_button = tk.Button(master, text="Select Local 'mods' Folder",
                                               command=self.choose_source_folder)
-        self.source_folder_button.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.source_folder_button.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        self.source_folder_button.config(state=tk.DISABLED)  # Disable by default
 
         # Create and position the destination folder selection button
         self.destination_folder_button = tk.Button(master, text="Select '~mods' Folder",
                                                    command=self.choose_destination_folder)
-        self.destination_folder_button.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        self.destination_folder_button.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+        self.destination_folder_button.config(state=tk.DISABLED)  # Disable by default
+
+        # Create and position the refresh mods list button
+        self.refresh_mods_list_button = tk.Button(master, text="Refresh Mods List", command=self.refresh_mods_list)
+        self.refresh_mods_list_button.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the file listbox label
         self.file_listbox_label = tk.Label(master, text="Mod Zips")
-        self.file_listbox_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+        self.file_listbox_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the file listbox
         self.file_listbox = tk.Listbox(master, selectmode=tk.MULTIPLE)
-        self.file_listbox.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
+        self.file_listbox.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the unzip button
         self.unzip_button = tk.Button(master, text="Unzip Selected Mod/s", command=self.unzip_mods)
-        self.unzip_button.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+        self.unzip_button.grid(row=7, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the source folder label
         self.source_folder_label = tk.Label(master, text="No mod folder selected.")
-        self.source_folder_label.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+        self.source_folder_label.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the destination folder label
         self.destination_folder_label = tk.Label(master, text="No ~mods folder selected.")
-        self.destination_folder_label.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+        self.destination_folder_label.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the mod listbox label
         self.mod_listbox_label = tk.Label(self.master, text="Installed Mods")
-        self.mod_listbox_label.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
+        self.mod_listbox_label.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the mod listbox
         self.mod_listbox = tk.Listbox(self.master, selectmode=tk.MULTIPLE)
-        self.mod_listbox.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
+        self.mod_listbox.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the delete mods button
         self.delete_mods_button = tk.Button(master, text="Delete Selected Mods", command=self.delete_selected_mods)
-        self.delete_mods_button.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
+        self.delete_mods_button.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create the source and destination folder variables
         self.source_folder = ""
@@ -150,6 +170,9 @@ class MidnightSunsMM:
         self.adjust_listbox_width(self.file_listbox)
 
     def populate_mod_list_box(self):
+        # Clear the mod listbox
+        self.clear_mod_listbox()
+
         # Get a list of all the .pak files in the destination folder
         mod_files = [f for f in os.listdir(self.destination_folder) if f.endswith('.pak')]
 
@@ -222,8 +245,18 @@ class MidnightSunsMM:
             archive_file_path = os.path.join(self.source_folder, file_name)
 
             try:
-                # Extract all the contents of the archive file into the destination folder
-                Archive(archive_file_path).extractall(self.destination_folder)
+                # Create a temporary directory to extract all files from the archive
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    # Extract all files from the archive to the temporary directory
+                    Archive(archive_file_path).extractall(tmp_dir)
+
+                    # Find and extract only the .pak files from the temporary directory to the destination folder
+                    for root_uz, _, files in os.walk(tmp_dir):
+                        for file in files:
+                            if file.lower().endswith('.pak'):
+                                src_path = os.path.join(root_uz, file)
+                                dest_path = os.path.join(self.destination_folder, file)
+                                shutil.move(src_path, dest_path)
             except Exception as e:
                 # print(f"An error occurred while extracting {file_name}: {e}")
                 logging.error(f"An error occurred while extracting {file_name}: {e}")
@@ -285,6 +318,21 @@ class MidnightSunsMM:
     def clear_file_listbox(self):
         self.file_listbox.delete(0, tk.END)
 
+    def clear_mod_listbox(self):
+        self.mod_listbox.delete(0, tk.END)
+
+    def refresh_mods_list(self):
+        self.populate_file_listbox()
+        self.populate_mod_list_box()
+
+    def toggle_advanced(self):
+        if self.advanced_flag.get():
+            self.source_folder_button.config(state=tk.NORMAL)
+            self.destination_folder_button.config(state=tk.NORMAL)
+        else:
+            self.source_folder_button.config(state=tk.DISABLED)
+            self.destination_folder_button.config(state=tk.DISABLED)
+
     def load_config(self):
         """
         Load the configuration from the JSON file. If the file does not exist, return an empty dictionary.
@@ -341,7 +389,7 @@ class MidnightSunsMM:
 if __name__ == '__main__':
     # Create the GUI window
     root = tk.Tk()
-    root.geometry("700x400")  # Set the default window size here
+    root.geometry("700x500")  # Set the default window size here
     app = MidnightSunsMM(root)
     app.center_window()  # Center the window on the screen
     root.mainloop()
