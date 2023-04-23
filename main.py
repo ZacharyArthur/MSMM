@@ -81,7 +81,7 @@ class MidnightSunsMM:
         self.mod_listbox.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create and position the delete mods button
-        self.delete_mods_button = tk.Button(master, text="Delete Selected Mods", command=self.delete_selected_mods)
+        self.delete_mods_button = tk.Button(master, text="Delete Selected Mod/s", command=self.delete_selected_mods)
         self.delete_mods_button.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Create the source and destination folder variables
