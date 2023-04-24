@@ -398,7 +398,7 @@ class MidnightSunsMM:
 if __name__ == '__main__':
     # Create the GUI window
     root = tk.Tk()
-    root.geometry("750x500")  # Set the default window size here
+    root.geometry("850x500")  # Set the default window size here
     app = MidnightSunsMM(root)
     app.center_window()  # Center the window on the screen
     root.mainloop()
