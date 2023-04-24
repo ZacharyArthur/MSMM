@@ -234,10 +234,6 @@ class MidnightSunsMM:
             messagebox.showerror("Error", "Please select both a source folder and a destination folder.")
             return
 
-        # # Check if the destination folder contains any mods
-        # if self.selected_mods:
-        #     self.delete_selected_mods()
-
         # Get the list of selected files in the file listbox
         selected_mods = [self.file_listbox.get(i) for i in self.file_listbox.curselection()]
 
