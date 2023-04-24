@@ -8,8 +8,10 @@ import tempfile
 import tkinter as tk
 import tkinter.filedialog as filedialog
 import tkinter.messagebox as messagebox
+import zipfile
 
-from pyunpack import Archive
+import py7zr
+import rarfile
 
 
 # Driver class
@@ -243,12 +245,23 @@ class MidnightSunsMM:
         for file_name in selected_mods:
             # Get the full path of the archive file
             archive_file_path = os.path.join(self.source_folder, file_name)
+            file_ext = os.path.splitext(file_name)[1].lower()
 
             try:
                 # Create a temporary directory to extract all files from the archive
                 with tempfile.TemporaryDirectory() as tmp_dir:
                     # Extract all files from the archive to the temporary directory
-                    Archive(archive_file_path).extractall(tmp_dir)
+                    if file_ext == '.zip':
+                        with zipfile.ZipFile(archive_file_path, 'r') as archive:
+                            archive.extractall(tmp_dir)
+                    elif file_ext == '.7z':
+                        with py7zr.SevenZipFile(archive_file_path, mode='r') as archive:
+                            archive.extractall(tmp_dir)
+                    elif file_ext == '.rar':
+                        with rarfile.RarFile(archive_file_path, 'r') as archive:
+                            archive.extractall(tmp_dir)
+                    else:
+                        continue
 
                     # Find and extract only the .pak files from the temporary directory to the destination folder
                     for root_uz, _, files in os.walk(tmp_dir):
