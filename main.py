@@ -304,7 +304,7 @@ class MidnightSunsMM:
         # Refresh the installed mods list
         self.populate_mod_list_box()
 
-    def adjust_listbox_width(self, listbox, min_width=25, max_width=50):
+    def adjust_listbox_width(self, listbox, min_width=30, max_width=65):
         max_length = min_width
         for item in listbox.get(0, tk.END):
             item_length = len(item)
@@ -398,7 +398,7 @@ class MidnightSunsMM:
 if __name__ == '__main__':
     # Create the GUI window
     root = tk.Tk()
-    root.geometry("700x500")  # Set the default window size here
+    root.geometry("750x500")  # Set the default window size here
     app = MidnightSunsMM(root)
     app.center_window()  # Center the window on the screen
     root.mainloop()
